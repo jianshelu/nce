@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">nce</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="tv_id">序号</string>
+    <string name="tv_title">文章标题</string>
+    <string name="tv_count">学习次数</string>
+
+</resources>

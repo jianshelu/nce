@@ -1,0 +1,109 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/list_item_linear_1"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:id="@+id/list_item_linear_2"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:focusable="false"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:id="@+id/tv_id"
+            android:layout_width="30dp"
+            android:layout_height="wrap_content"
+            android:focusable="false"
+            android:gravity="left"
+            android:singleLine="true"
+            android:text="id" />
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:focusable="false"
+            android:gravity="left"
+            android:paddingLeft="10dp"
+            android:singleLine="true"
+            android:text="item" />
+
+        <CheckBox
+            android:id="@+id/cb_favorite"
+            style="@style/FavChecked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:focusable="false" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/list_item_linear_3"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:focusable="false"
+            android:gravity="left"
+            android:singleLine="true"
+            android:text="学习时间:"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tv_start"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:focusable="false"
+            android:singleLine="true"
+            android:text="学习时间:"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:focusable="false"
+            android:singleLine="true"
+            android:text="/"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tv_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:focusable="false"
+            android:singleLine="true"
+            android:text="学习时间:"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:focusable="false"
+            android:singleLine="true"
+            android:text="学习次数:"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tv_count"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:focusable="false"
+            android:singleLine="true"
+            android:text="学习次数:"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+</LinearLayout>
