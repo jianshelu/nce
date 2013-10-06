@@ -16,10 +16,11 @@
 
         <TextView
             android:id="@+id/tv_id"
-            android:layout_width="30dp"
+            android:layout_width="28dp"
             android:layout_height="wrap_content"
             android:focusable="false"
-            android:gravity="left"
+            android:gravity="right"
+            android:paddingRight="8dp"
             android:singleLine="true"
             android:text="id" />
 
@@ -30,7 +31,6 @@
             android:layout_weight="1"
             android:focusable="false"
             android:gravity="left"
-            android:paddingLeft="10dp"
             android:singleLine="true"
             android:text="item" />
 
@@ -51,29 +51,12 @@
         android:orientation="horizontal" >
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:focusable="false"
-            android:gravity="left"
-            android:singleLine="true"
-            android:text="学习时间:"
-            android:textSize="10sp" />
-
-        <TextView
             android:id="@+id/tv_start"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:focusable="false"
             android:singleLine="true"
             android:text="学习时间:"
-            android:textSize="10sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:focusable="false"
-            android:singleLine="true"
-            android:text="/"
             android:textSize="10sp" />
 
         <TextView

@@ -1,25 +1,11 @@
 package com.dbutton.nce;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-
-import android.R.integer;
-import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.Cursor;
-import android.net.Uri;
-import android.provider.ContactsContract.Data;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
@@ -54,20 +40,32 @@ public class ColorAdapter extends SimpleCursorAdapter {
 		convertView.setBackgroundDrawable(backColor
 				.getDrawable((click_count % colorNum)));
 		TextView startText = (TextView) convertView.findViewById(R.id.tv_start);
-		int startTimeIndex = c.getColumnIndex(NceDatabase.UserAction.START_TIME);
-		int startTime = c.getInt(startTimeIndex);
-		if(startTime > 0){
-			startText.setText(getStandardDate(String.valueOf(startTime)));
+		TextView durationText = (TextView) convertView.findViewById(R.id.tv_duration);
+		
+		String startTime = startText.getText().toString();
+		String durationTime = durationText.getText().toString();
+		
+		if(("".equals(durationTime))==false){
+			String durFormat = getStandardTime(durationTime,1);
+			durationText.setText("/" + durFormat);
+		}
+		if(("".equals(startTime))==false){
+			startText.setText("学习时间:" + getStandardTime(startTime,0));
 		}
 		return convertView;
 	}
 
-	public static String getStandardDate(String timeStr) {
+	
+	public static String getStandardTime(String timeStr, int text) {
 
 		StringBuffer sb = new StringBuffer();
-
+		long time = 0;
 		long t = Long.parseLong(timeStr);
-		long time = System.currentTimeMillis() - (t*1000);
+		if(text == 0){
+			time = System.currentTimeMillis() - t;
+		} else {
+			time = t;
+		}
 		long mill = (long) Math.ceil(time /1000);//秒前
 
 		long minute = (long) Math.ceil(time/60/1000.0f);// 分钟前
@@ -99,7 +97,7 @@ public class ColorAdapter extends SimpleCursorAdapter {
 		} else {
 			sb.append("刚刚");
 		}
-		if (!sb.toString().equals("刚刚")) {
+		if (!sb.toString().equals("刚刚")&& text == 0) {
 			sb.append("前");
 		}
 		return sb.toString();
