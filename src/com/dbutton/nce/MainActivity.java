@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Guard;
 
 import android.app.Activity;
 import android.content.ContentUris;
@@ -17,19 +18,27 @@ import android.database.CursorJoiner;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.gesture.GestureOverlayView;
+import android.gesture.GestureOverlayView.OnGestureListener;
 import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckBox;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnTouchListener, GestureDetector.OnGestureListener {
 	private ColorAdapter adapter;
 	private String TAG = "adapter";
 	private Uri textUri;
@@ -41,12 +50,19 @@ public class MainActivity extends Activity {
 	private Uri multiUri;
 	private Uri actionUri;
 	private Cursor multiCursor;
-
+	private GestureDetector mGestureDetector;
+	
+	private int verticalMinDistance = 40;  
+	private int minVelocity         = 0;  
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		mGestureDetector = new GestureDetector((GestureDetector.OnGestureListener) this);    
+        RelativeLayout viewSnsLayout = (RelativeLayout)findViewById(R.id.relativeLayout);    
+        viewSnsLayout.setOnTouchListener(this);    
+        viewSnsLayout.setLongClickable(true);    
 		listView = (ListView) findViewById(R.id.lv);
 		initDatabase();
 
@@ -117,69 +133,6 @@ public class MainActivity extends Activity {
 		listView.setOnItemClickListener(new myItemClickListener());
 	}
 		
-	private void initDatabase() throws Error {
-		boolean dbExist = checkDataBase();
-        if(dbExist){
-        	
-        }else{//不存在就把raw里的数据库写入手机
-        	try{
-        		copyDataBase();
-        	}catch(IOException e){
-        		throw new Error("Error copying database");
-        	}
-        }
-	}
-	
-	private boolean checkDataBase() {
-		SQLiteDatabase checkDB = null;
-		try {
-			String databaseFilename = getDatabasePath(NceDatabase.DATABASE_NAME)
-					.toString();
-			checkDB = SQLiteDatabase.openDatabase(databaseFilename, null,
-					SQLiteDatabase.OPEN_READONLY);
-		} catch (SQLiteException e) {
-		}
-		if (checkDB != null) {
-			checkDB.close();
-		}
-		return checkDB != null ? true : false;
-	}
-
-	/**
-	 * 复制数据库到手机指定文件夹下
-	 * 
-	 * @throws IOException
-	 */
-	public void copyDataBase() throws IOException {
-		File dataFile  = getDatabasePath(NceDatabase.DATABASE_NAME);
-		if (!dataFile.exists())// 判断文件夹是否存在，不存在就新建一个
-			 if(dataFile.getParentFile().mkdir()) 
-				 System.out.println("hello");
-		FileOutputStream os = null;
-		try {
-			os = new FileOutputStream(dataFile);// 得到数据库文件的写入流
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		InputStream is = MainActivity.this.getResources().openRawResource(
-				R.raw.nce_2);// 得到数据库文件的数据流
-		byte[] buffer = new byte[8192];
-		int count = 0;
-		try {
-			while ((count = is.read(buffer)) > 0) {
-				os.write(buffer, 0, count);
-				os.flush();
-			}
-		} catch (IOException e) {
-			dataFile.delete();
-		}
-		try {
-			is.close();
-			os.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	protected class myItemClickListener implements OnItemClickListener {
 
@@ -216,4 +169,129 @@ public class MainActivity extends Activity {
 		
 
 	}
+
+	@Override
+	public boolean onDown(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+			float velocityY) {
+		Log.i("Fling", "Fling Happened!");  
+		 if (e2.getX() - e1.getX() > verticalMinDistance && Math.abs(velocityX) > minVelocity) {  
+        	Intent intent = new Intent();
+			intent.setClass(MainActivity.this, UserAction.class);
+			startActivity(intent);
+			//设置切换动画，从右边进入，左边退出
+			overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right); 
+            return true;  
+        }  
+        return true; 
+	}
+
+	@Override
+	public void onLongPress(MotionEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
+			float distanceY) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void onShowPress(MotionEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean onSingleTapUp(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	@Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mGestureDetector.onTouchEvent(ev);
+        // scroll.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
+    }
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	
+	private void initDatabase() throws Error {
+		boolean dbExist = checkDataBase();
+		if(dbExist){
+			
+		}else{//不存在就把raw里的数据库写入手机
+			try{
+				copyDataBase();
+			}catch(IOException e){
+				throw new Error("Error copying database");
+			}
+		}
+	}
+	
+	private boolean checkDataBase() {
+		SQLiteDatabase checkDB = null;
+		try {
+			String databaseFilename = getDatabasePath(NceDatabase.DATABASE_NAME)
+					.toString();
+			checkDB = SQLiteDatabase.openDatabase(databaseFilename, null,
+					SQLiteDatabase.OPEN_READONLY);
+		} catch (SQLiteException e) {
+		}
+		if (checkDB != null) {
+			checkDB.close();
+		}
+		return checkDB != null ? true : false;
+	}
+	
+	/**
+	 * 复制数据库到手机指定文件夹下
+	 * 
+	 * @throws IOException
+	 */
+	public void copyDataBase() throws IOException {
+		File dataFile  = getDatabasePath(NceDatabase.DATABASE_NAME);
+		if (!dataFile.exists())// 判断文件夹是否存在，不存在就新建一个
+			if(dataFile.getParentFile().mkdir()) 
+				System.out.println("hello");
+		FileOutputStream os = null;
+		try {
+			os = new FileOutputStream(dataFile);// 得到数据库文件的写入流
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		InputStream is = MainActivity.this.getResources().openRawResource(
+				R.raw.nce_2);// 得到数据库文件的数据流
+		byte[] buffer = new byte[8192];
+		int count = 0;
+		try {
+			while ((count = is.read(buffer)) > 0) {
+				os.write(buffer, 0, count);
+				os.flush();
+			}
+		} catch (IOException e) {
+			dataFile.delete();
+		}
+		try {
+			is.close();
+			os.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

@@ -7,5 +7,7 @@
     <string name="tv_id">序号</string>
     <string name="tv_title">文章标题</string>
     <string name="tv_count">学习次数</string>
+    <string name="text_graph">学习效率</string>
+    <string name="user_action">学习日历</string>
 
 </resources>

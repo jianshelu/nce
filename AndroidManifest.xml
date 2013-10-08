@@ -50,6 +50,14 @@
                 <data android:mimeType="vnd.android.cursor.item/user_action"/>
             </intent-filter>
         </activity>
-    </application>
+        <activity 
+            android:name="com.dbutton.nce.TextGraph"
+            android:label="@string/text_graph">
+        </activity>    
+        <activity 
+            android:name="com.dbutton.nce.UserAction"
+            android:label="@string/user_action">
+        </activity> 
+        </application>
 
 </manifest>
