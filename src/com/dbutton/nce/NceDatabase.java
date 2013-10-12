@@ -35,7 +35,7 @@ public final class NceDatabase {
 		public static final Uri ACTION_ID_URI_PATTERN = Uri.parse(SCHEME + AUTHORITY + PATH_ACTION_ID + "/#");
 		
 		public static final String ACTION_ITEM_TYPE = "vnd.android.cursor.item/user_action";
-		public static final String MULTI_ITEM_TYPE = "vnd.android.cursor.item/user_action";
+		public static final String MULTI_ITEM_TYPE = "vnd.android.cursor.item/multi_user_action";
 		
 		/**
 		 * ндубid

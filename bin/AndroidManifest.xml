@@ -41,7 +41,7 @@
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="vnd.android.cursor.item/user_action"/>
+                <data android:mimeType="vnd.android.cursor.item/multi_user_action"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.INSERT" />
@@ -50,9 +50,26 @@
                 <data android:mimeType="vnd.android.cursor.item/user_action"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.dbutton.nce.GraphResult"
+            android:label="@string/app_name" >
+           <!--  <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/user_action"/>
+            </intent-filter> -->
+            
+        </activity>
         <activity 
             android:name="com.dbutton.nce.TextGraph"
             android:label="@string/text_graph">
+             <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/user_action"/>
+            </intent-filter>
         </activity>    
         <activity 
             android:name="com.dbutton.nce.UserAction"

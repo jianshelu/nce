@@ -1,5 +1,8 @@
 package com.dbutton.nce;
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -44,6 +47,10 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	private Long startFirst;
 	private Long start;
 	private GestureDetector mGestureDetector;
+	private Intent intent;
+	private String action;
+	private long duration;
+	private boolean inText = false;
 	
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;  
@@ -71,6 +78,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			intent.setAction(Intent.ACTION_INSERT);
 //		}
 		startFirst = Long.valueOf(System.currentTimeMillis());
+		startFirstTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(startFirst));
 		start=startFirst;
 		mThread.start();
 		mCursor = managedQuery(multiIdUri, PROJECTION, null, null, null);
@@ -141,10 +149,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			}
 		}
 	});
-	private Intent intent;
-	private String action;
-	private long duration;
-	private boolean inText = false;
+	private String startFirstTimeString;
 
 	 @Override
 	    protected void onSaveInstanceState(Bundle outState) {
@@ -158,14 +163,15 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		// TODO Auto-generated method stub
 		super.onDestroy();
 		long end = Long.valueOf(System.currentTimeMillis());
+		String endTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(end));
 		long inter = end - start;
 		System.out.println("duration destory before" + duration + "---" + inter);
 		duration += inter;
 		System.out.println("duration destory after" + duration + "---" + inter);
 		values = new ContentValues();
 		values.put(NceDatabase.UserAction.LESSON_ID, lesson_id);
-		values.put(NceDatabase.UserAction.START_TIME, startFirst);
-		values.put(NceDatabase.UserAction.END_TIME, end);
+		values.put(NceDatabase.UserAction.START_TIME, startFirstTimeString);
+		values.put(NceDatabase.UserAction.END_TIME, endTimeString);
 		values.put(NceDatabase.UserAction.DURATION, duration);
 		getContentResolver().insert(multiIdUri, values);
 		System.out.println("activity destory");
@@ -204,8 +210,11 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			float velocityY) {
 		Log.i("Fling", "Fling Happened!");  
 		 if (e1.getX() - e2.getX() > verticalMinDistance && Math.abs(velocityX) > minVelocity) {  
-        	Intent intent = new Intent();
-			intent.setClass(NceText.this, TextGraph.class);
+//			startActivity(intent);
+			Intent intent = new Intent();
+			intent.putExtra("lesson_id", lesson_id);
+			intent.setAction(Intent.ACTION_VIEW);
+			intent.setData(NceDatabase.UserAction.ACTION_ID_URI_BASE);
 			startActivity(intent);
 			//设置切换动画，从右边进入，左边退出
 			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);

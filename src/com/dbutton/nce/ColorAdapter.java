@@ -1,5 +1,8 @@
 package com.dbutton.nce;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -15,6 +18,8 @@ import android.widget.TextView;
  */
 public class ColorAdapter extends SimpleCursorAdapter {
 	
+	private static final int timeFormat = 0;
+	private static final int durationFormat = 1;
 	private Context context;
 	private Cursor c;
 	
@@ -46,25 +51,33 @@ public class ColorAdapter extends SimpleCursorAdapter {
 		String durationTime = durationText.getText().toString();
 		
 		if(("".equals(durationTime))==false){
-			String durFormat = getStandardTime(durationTime,1);
+			String durFormat = getStandardTime(durationTime,durationFormat);
 			durationText.setText("/" + durFormat);
 		}
 		if(("".equals(startTime))==false){
-			startText.setText("学习时间:" + getStandardTime(startTime,0));
+			startText.setText("学习时间:" + getStandardTime(startTime,timeFormat));
 		}
 		return convertView;
 	}
 
 	
-	public static String getStandardTime(String timeStr, int text) {
+	public static String getStandardTime(String timeStr, int format) {
 
+		
 		StringBuffer sb = new StringBuffer();
-		long time = 0;
-		long t = Long.parseLong(timeStr);
-		if(text == 0){
+		long t = 0;
+		long time;
+		if(format == timeFormat){
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			try {
+				t = sdf.parse(timeStr).getTime();
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			time = System.currentTimeMillis() - t;
 		} else {
-			time = t;
+			time = Long.parseLong(timeStr);
 		}
 		long mill = (long) Math.ceil(time /1000);//秒前
 
@@ -97,7 +110,7 @@ public class ColorAdapter extends SimpleCursorAdapter {
 		} else {
 			sb.append("刚刚");
 		}
-		if (!sb.toString().equals("刚刚")&& text == 0) {
+		if (!sb.toString().equals("刚刚")&& format == timeFormat) {
 			sb.append("前");
 		}
 		return sb.toString();

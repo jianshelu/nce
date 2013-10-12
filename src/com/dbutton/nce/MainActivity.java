@@ -83,8 +83,10 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 				NceDatabase.UserAction.START_TIME,
 				NceDatabase.UserAction.DURATION };
 		viewIDs = new int[] { R.id.tv_id, R.id.tv_title, R.id.tv_count,R.id.cb_favorite,R.id.tv_start, R.id.tv_duration};
+		String selection = NceDatabase.NceText.TEXT_TABLE_NAME + "."+ NceDatabase.NceText._ID + " == "
+						+ NceDatabase.UserAction.ACTION_TABLE_NAME + "." + NceDatabase.UserAction.LESSON_ID;
 		
-		multiCursor = this.managedQuery(multiUri, multiProjections, null, null, null);
+		multiCursor = this.managedQuery(multiUri, multiProjections, selection, null, null);
 		
 		multiCursor.setNotificationUri(getContentResolver(), textUri);
 		multiCursor.setNotificationUri(getContentResolver(), actionUri);

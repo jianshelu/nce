@@ -259,7 +259,7 @@ public class NceDatabaseProvider extends ContentProvider {
 		case ACTION_ID:
 			qb.setTables(NceDatabase.UserAction.ACTION_TABLE_NAME);
 			qb.setProjectionMap(sTextProjectionMap);
-			qb.appendWhere(NceDatabase.UserAction._ID + // the name of the ID column
+			qb.appendWhere(NceDatabase.UserAction.LESSON_ID + // the name of the ID column
 					"=" +							// the position of the note ID itself in the incoming URI
 					uri.getPathSegments().get(
 							NceDatabase.UserAction.TEXT_ID_PATH_POSITION));
@@ -270,19 +270,6 @@ public class NceDatabaseProvider extends ContentProvider {
 			qb.setTables(table1 + " cross join " + table2);
 			qb.setProjectionMap(sTextProjectionMap);
 			groupBy = NceDatabase.UserAction.LESSON_ID;
-			if (selection != null){  
-                if (selection.length()>0){  
-                    selection += "AND "+ NceDatabase.NceText._ID + " = "+ NceDatabase.UserAction.LESSON_ID;  
-                }  
-                else{  
-                    selection = NceDatabase.NceText._ID +" = "+  NceDatabase.UserAction.LESSON_ID;
-                }     
-            }  
-            else  
-            {  
-                selection = NceDatabase.NceText.TEXT_TABLE_NAME + "." + NceDatabase.NceText._ID +" = "
-                			+ NceDatabase.UserAction.ACTION_TABLE_NAME + "." + NceDatabase.UserAction.LESSON_ID ;  
-            }  
 			break;
 		case MULTI_TEXT_ID:
 			qb.setTables(NceDatabase.NceText.TEXT_TABLE_NAME);
