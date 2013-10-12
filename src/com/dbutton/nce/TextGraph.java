@@ -67,10 +67,12 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			actionIdUri = intent.getData();
 			lesson_id = intent.getLongExtra("lesson_id", 0);
 		}
-			
+//			max(date(start_time, 'weekday 0', '-7 day')) as WeekStart, max(date(start_time, 'weekday 0', '-1 day')) as WeekEnd
 		String[] durationProjections = new String[] { 
 				NceDatabase.UserAction._ID,
 				NceDatabase.UserAction.LESSON_ID,
+				"max(date(" + NceDatabase.UserAction.START_TIME + ", 'weekday 0', '-7 day')) as WeekStart ",
+				"max(date(" + NceDatabase.UserAction.START_TIME + ", 'weekday 0', '-1 day')) as WeekEnd ",
 				NceDatabase.UserAction.START_TIME,
 				NceDatabase.UserAction.END_TIME,
 				"SUM (" + NceDatabase.UserAction.DURATION + ") AS SUMDURATION"};

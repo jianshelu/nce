@@ -1,0 +1,4 @@
+SELECT _id, lesson_id, start_time, max(date(start_time, 'weekday 0', '-7 day')) as WeekStart, max(date(start_time, 'weekday 0', '-1 day')) as WeekEnd , 
+end_time, sum(duration)/60.0/1000.0, (strftime('%Y%m%d',start_time))
+FROM user_action WHERE (lesson_id =2) AND (start_time not null) GROUP BY (strftime('%Y%m%d',start_time))
+
