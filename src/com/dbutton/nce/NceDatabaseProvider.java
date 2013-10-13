@@ -66,6 +66,8 @@ public class NceDatabaseProvider extends ContentProvider {
 				NceDatabase.UserAction.START_TIME);
 		sTextProjectionMap.put(NceDatabase.UserAction.END_TIME,
 				NceDatabase.UserAction.END_TIME);
+		sTextProjectionMap.put(NceDatabase.UserAction.INTERVAL,
+				NceDatabase.UserAction.INTERVAL);
 		sTextProjectionMap.put(NceDatabase.UserAction.DURATION,
 				NceDatabase.UserAction.DURATION);
 
@@ -222,6 +224,8 @@ public class NceDatabaseProvider extends ContentProvider {
 			String[] selectionArgs, String sortOrder) {
 		Cursor cursor = null;
 		String groupBy = null;
+		String table1;
+		String table2;
 		// Constructs a new query builder and sets its table name
 		SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
 		switch (sUriMatcher.match(uri)) {
@@ -265,19 +269,16 @@ public class NceDatabaseProvider extends ContentProvider {
 							NceDatabase.UserAction.TEXT_ID_PATH_POSITION));
 			break;
 		case MULITABLE:
-			String table1 = uri.getPathSegments().get(0);
-			String table2 = uri.getPathSegments().get(1);
+			table1 = uri.getPathSegments().get(0);
+			table2 = uri.getPathSegments().get(1);
 			qb.setTables(table1 + " cross join " + table2);
 			qb.setProjectionMap(sTextProjectionMap);
 			groupBy = NceDatabase.UserAction.LESSON_ID;
 			break;
 		case MULTI_TEXT_ID:
-			qb.setTables(NceDatabase.NceText.TEXT_TABLE_NAME);
-			qb.setProjectionMap(sTextProjectionMap);
-			qb.appendWhere(NceDatabase.NceText._ID + // the name of the ID column
-					"=" +							// the position of the note ID itself in the incoming URI
-					uri.getPathSegments().get(
-							NceDatabase.NceText.MULTI_TEXT_ID_PATH_POSITION));
+			table1 = uri.getPathSegments().get(0);
+			table2 = uri.getPathSegments().get(1);
+			qb.setTables(table1 + " cross join " + table2);
 			break;
 		}
 		SQLiteDatabase db = nceHelper.getReadableDatabase();

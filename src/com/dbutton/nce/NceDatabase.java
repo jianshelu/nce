@@ -62,6 +62,11 @@ public final class NceDatabase {
 		public static final String DURATION = "duration";
 		
 		/**
+		 * 学习间隔
+		 * 类型:TIME
+		 */
+		public static final String INTERVAL = "interval";
+		/**
 		 * 用户id
 		 * 类型:integer
 		 */

@@ -1,6 +1,7 @@
 package com.dbutton.nce;
 
 import java.sql.Date;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import android.app.Activity;
@@ -26,9 +27,7 @@ import android.widget.Toast;
 
 public class NceText extends Activity implements OnTouchListener, GestureDetector.OnGestureListener {
 
-	private static final String[] PROJECTION = new String[] {
-			NceDatabase.NceText._ID, NceDatabase.NceText.TEXT_TITLE,
-			NceDatabase.NceText.TEXT_BODY };
+	private static final String START_TIME = NceDatabase.UserAction.START_TIME;
 	private final static int STATE_VIEW = 0;
 	private static final String ORIGINAL_CONTENT = "origContent";
 	private int mState;
@@ -42,7 +41,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	protected int iCount = 90;
 	private int cycle = 10;
 	private int time = 2 * cycle;
-	private long lesson_id;
+	private long intentLessonId;
 	private ContentValues values;
 	private Long startFirst;
 	private Long start;
@@ -51,6 +50,8 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	private String action;
 	private long duration;
 	private boolean inText = false;
+	private String startFirstTimeString;
+	private long lastStarttime;
 	
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;  
@@ -73,24 +74,40 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 //		if (Intent.ACTION_VIEW.equals(action)) {
 			mState = STATE_VIEW;	
 			multiIdUri = intent.getData();
-			lesson_id = intent.getLongExtra("lesson_id", 0);
-			actionIdUri=ContentUris.withAppendedId(NceDatabase.UserAction.ACTION_URI,lesson_id);
+			intentLessonId = intent.getLongExtra("lesson_id", 0);
+			actionIdUri=ContentUris.withAppendedId(NceDatabase.UserAction.ACTION_URI,intentLessonId);
 			intent.setAction(Intent.ACTION_INSERT);
 //		}
+		String[] projection = new String[] {
+				NceDatabase.NceText.TEXT_TABLE_NAME + "." + NceDatabase.NceText._ID + " AS ID", 
+				NceDatabase.NceText.TEXT_TITLE,NceDatabase.NceText.TEXT_BODY, 
+				"MAX(" + NceDatabase.UserAction.START_TIME +") AS MAXSTARTTIME"};
+		String selection = "ID =?) AND ("
+				+ START_TIME + " NOT NULL";
+				
+		String[] selectionArgsString = {Long.toString(intentLessonId)};
 		startFirst = Long.valueOf(System.currentTimeMillis());
 		startFirstTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(startFirst));
 		start=startFirst;
 		mThread.start();
-		mCursor = managedQuery(multiIdUri, PROJECTION, null, null, null);
+		mCursor = managedQuery(multiIdUri, projection, selection, selectionArgsString, null);
 		if (mCursor != null) {
 			mCursor.requery();
 			mCursor.moveToFirst();
-			int colTitleIndex = mCursor
+			int titleIndex = mCursor
 					.getColumnIndex(NceDatabase.NceText.TEXT_TITLE);
-			int colBodyIndex = mCursor
+			int bodyIndex = mCursor
 					.getColumnIndex(NceDatabase.NceText.TEXT_BODY);
-			String title = mCursor.getString(colTitleIndex);
-			String body = mCursor.getString(colBodyIndex);
+			int starttimeIndex = mCursor
+					.getColumnIndex("MAXSTARTTIME");
+			String title = mCursor.getString(titleIndex);
+			String body = mCursor.getString(bodyIndex);
+			try {
+				lastStarttime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(mCursor.getString(starttimeIndex)).getTime();
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			mTitle.setText(title);
 			mBody.setText(body);
 			Toast.makeText(this, "学习计时 "+Math.round(time*5.0/60)+" 分钟开始", Toast.LENGTH_SHORT).show();
@@ -149,7 +166,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			}
 		}
 	});
-	private String startFirstTimeString;
+	
 
 	 @Override
 	    protected void onSaveInstanceState(Bundle outState) {
@@ -163,16 +180,18 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		// TODO Auto-generated method stub
 		super.onDestroy();
 		long end = Long.valueOf(System.currentTimeMillis());
+		long interval = end - lastStarttime;
 		String endTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(end));
 		long inter = end - start;
 		System.out.println("duration destory before" + duration + "---" + inter);
 		duration += inter;
 		System.out.println("duration destory after" + duration + "---" + inter);
 		values = new ContentValues();
-		values.put(NceDatabase.UserAction.LESSON_ID, lesson_id);
+		values.put(NceDatabase.UserAction.LESSON_ID, intentLessonId);
 		values.put(NceDatabase.UserAction.START_TIME, startFirstTimeString);
 		values.put(NceDatabase.UserAction.END_TIME, endTimeString);
 		values.put(NceDatabase.UserAction.DURATION, duration);
+		values.put(NceDatabase.UserAction.INTERVAL, interval);
 		getContentResolver().insert(multiIdUri, values);
 		System.out.println("activity destory");
 	}
@@ -212,7 +231,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		 if (e1.getX() - e2.getX() > verticalMinDistance && Math.abs(velocityX) > minVelocity) {  
 //			startActivity(intent);
 			Intent intent = new Intent();
-			intent.putExtra("lesson_id", lesson_id);
+			intent.putExtra("lesson_id", intentLessonId);
 			intent.setAction(Intent.ACTION_VIEW);
 			intent.setData(NceDatabase.UserAction.ACTION_ID_URI_BASE);
 			startActivity(intent);

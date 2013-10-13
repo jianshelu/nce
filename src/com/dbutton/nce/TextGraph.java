@@ -36,11 +36,12 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	private static final String DURATION = NceDatabase.UserAction.DURATION;
 	private static final String END_TIME = NceDatabase.UserAction.END_TIME;
 	private static final String START_TIME = NceDatabase.UserAction.START_TIME;
+	private static final String INTERVAL = NceDatabase.UserAction.INTERVAL;
 	private static final String WEEKEND = "max(date(" + START_TIME + ", 'weekday 0', '-1 day')) as WeekEnd ";
 	private static final String WEEKSTART = "max(date(" + START_TIME + ", 'weekday 0', '-7 day')) as WeekStart ";
 	private static final String LESSON_ID = NceDatabase.UserAction.LESSON_ID;
 	private static final String ID = NceDatabase.UserAction._ID;
-	private static final String[][] TITLES = {{"学习时长"},{"学习次数"}};
+	private static final String[][] TITLES = {{"学习时长"},{"学习次数"},{"间隔时长"}};
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;
 	private GestureDetector mGestureDetector;
@@ -84,31 +85,45 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		FROM user_action WHERE (lesson_id =2) AND (start_time not null) GROUP BY (strftime('%Y%m%d%H',start_time))
 		 */
 		
-		String[] graphOpreationStrings ={"SUM (" + DURATION + ") AS DUEDURATION","COUNT (" + DURATION + ") AS DUEDURATION"};
+		String[][] graphProjects ={
+				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + "," + END_TIME + "," + "SUM (" + DURATION + ") AS DUEDURATION"},
+				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + "," + END_TIME + "," + "COUNT (" + DURATION + ") AS DUEDURATION"}, 
+				{ID, LESSON_ID, INTERVAL}};
 		
-		String selection = LESSON_ID + " =?) AND ("
+		String selection[] = {
+				LESSON_ID + " =?) AND ("
 				+ START_TIME + " NOT NULL) "
 				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
-				+ START_TIME + ")";
+				+ START_TIME + ")",
+				LESSON_ID + " =?) AND ("
+				+ START_TIME + " NOT NULL) "
+				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
+				+ START_TIME + ")",
+				LESSON_ID + " =?) AND ("
+				+ INTERVAL + " NOT NULL) "
+				+ " GROUP BY " + "(" + ID};
 		String[] selectionArgsString = {Long.toString(intentLessonId)};
 		
-		renderers = new XYMultipleSeriesRenderer[graphOpreationStrings.length];
-		x = new ArrayList[graphOpreationStrings.length];
-		values = new ArrayList[graphOpreationStrings.length];
-		double[] divFactor = {1000.0*60.0, 1.0};
-		String[] DurationTitle = {"分钟","次数"};
-		String[] xTitle = {"月-日","小时"};
-		int valueColors[][] = {{Color.BLUE},{Color.RED}};
+		renderers = new XYMultipleSeriesRenderer[graphProjects.length];
+		x = new ArrayList[graphProjects.length];
+		values = new ArrayList[graphProjects.length];
+		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0*60.0};
+		double[] xScaleFactor = {1000*3600*12, 1000*3600*12, 1.0};
+		String[] DurationTitle = {"分钟","次数","分钟"};
+		String[] xTitle = {"月-日","小时","次数"};
+		int valueColors[][] = {{Color.BLUE},{Color.RED},{Color.GREEN}};
+		String[] column1String = { "DUEDURATION", "DUEDURATION", INTERVAL};
+		String[] column2String = { START_TIME, START_TIME, LESSON_ID};
 		
-		for (int i = 0; i < graphOpreationStrings.length; i++) {
-			String[] durationProjection = new String[] { ID,LESSON_ID,WEEKSTART,WEEKEND,START_TIME,END_TIME, graphOpreationStrings[i] };
+		
+		for (int i = 0; i < graphProjects.length; i++) {
 			renderers[i] = new XYMultipleSeriesRenderer();
 			x[i] = new ArrayList<double[]>();
 			values[i] = new ArrayList<double[]>();
 			@SuppressWarnings("deprecation")
-			Cursor durationCursor = this.managedQuery(actionIdUri, durationProjection, selection, selectionArgsString, null);
-			int durationIndex = durationCursor.getColumnIndex("DUEDURATION");
-			int starttimeIndex = durationCursor.getColumnIndex(START_TIME);
+			Cursor durationCursor = this.managedQuery(actionIdUri, graphProjects[i], selection[i], selectionArgsString, null);
+			int durationIndex = durationCursor.getColumnIndex(column1String[i]);
+			int starttimeIndex = durationCursor.getColumnIndex(column2String[i]);
 			cursorCount = durationCursor.getCount();
 			durationArrays = new double[cursorCount];
 			starttimeArrays = new double[cursorCount];
@@ -120,18 +135,22 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 				maxDuration = Math.max(durationArrays[j], maxDuration);
 				minDuration = Math.min(durationArrays[j], minDuration);
 				String starttimeString = durationCursor.getString(starttimeIndex);  
-				try {
-					starttimeArrays[j] = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(starttimeString).getTime();
-				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				if(i == 2){
+					starttimeArrays[j] = cursorCount;
+				}else{
+					try {
+						starttimeArrays[j] = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(starttimeString).getTime();
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					System.out.println("durationValues" + j + "---" + durationArrays[j]);
+					System.out.println("starttime" + j + "---" + starttimeArrays[j]);
 				}
-				System.out.println("durationValues" + j + "---" + durationArrays[j]);
-				System.out.println("starttime" + j + "---" + starttimeArrays[j]);
 				durationCursor.moveToNext();
 			}
 			Arrays.sort(starttimeArrays);
-	        x[i].add(starttimeArrays);
+			x[i].add(starttimeArrays);
 	        values[i].add(durationArrays);
 	        PointStyle[] styles = new PointStyle[] { PointStyle.CIRCLE };
 	        renderers[i] = buildRenderer(valueColors[i], styles);
@@ -159,7 +178,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			renderers[i].setBackgroundColor(Color.WHITE); //chart内部的背景色
 			renderers[i].setMarginsColor(Color.WHITE);//chart边缘部分的背景色
 			
-			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle [i], starttimeArrays[i], starttimeArrays[cursorCount-1]+1000*3600*12, 0.0, 15.0, Color.BLACK, Color.BLACK);
+			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle[i], starttimeArrays[0], starttimeArrays[cursorCount-1]+xScaleFactor[i], 0.0, 15.0, Color.BLACK, Color.BLACK);
 		}
     }
 
@@ -171,7 +190,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
 		viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
 		viewLayouts = new LinearLayout[] {viewLayout1, viewLayout2, viewLayout3, viewLayout4 };
-		String dateFormateString[] = {"MM-dd", "hh"};
+		String dateFormateString[] = {"MM-dd", "hh", "hh"};
 		view = new GraphicalView[renderers.length];
 		for (int i = 0; i < renderers.length; i++) {
 			if (view[i] == null) {
