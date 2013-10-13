@@ -33,24 +33,35 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 public class TextGraph extends Activity implements OnTouchListener, GestureDetector.OnGestureListener{
 
+	private static final String DURATION = NceDatabase.UserAction.DURATION;
+	private static final String END_TIME = NceDatabase.UserAction.END_TIME;
+	private static final String START_TIME = NceDatabase.UserAction.START_TIME;
+	private static final String WEEKEND = "max(date(" + START_TIME + ", 'weekday 0', '-1 day')) as WeekEnd ";
+	private static final String WEEKSTART = "max(date(" + START_TIME + ", 'weekday 0', '-7 day')) as WeekStart ";
+	private static final String LESSON_ID = NceDatabase.UserAction.LESSON_ID;
+	private static final String ID = NceDatabase.UserAction._ID;
+	private static final String[][] TITLES = {{"学习时长"},{"学习次数"}};
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;
 	private GestureDetector mGestureDetector;
 	private ScrollView scrollLayout;
-	private GraphicalView view1;
-	private GraphicalView view2;
-	private GraphicalView view3;
-	private GraphicalView view4;
-	private String[] titles;
-	private List<double[]> x;
-	private List<double[]> values;
-	private XYMultipleSeriesRenderer renderer;
+	private GraphicalView[] view;
 	
 	private int mState;
 	private Uri actionIdUri;
 	private final static int STATE_VIEW = 0;
-	private long lesson_id;
+	private long intentLessonId;
 	private int cursorCount;
+	private LinearLayout viewLayout1;
+	private LinearLayout viewLayout2;
+	private LinearLayout viewLayout3;
+	private LinearLayout viewLayout4;
+	private LinearLayout[] viewLayouts;
+	private double[] starttimeArrays;
+	private double[] durationArrays;
+	private XYMultipleSeriesRenderer[] renderers;
+	private List<double[]> x[];
+	private List<double[]> values[];
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,139 +76,112 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		if (Intent.ACTION_VIEW.equals(action)) {
 			mState = STATE_VIEW;	
 			actionIdUri = intent.getData();
-			lesson_id = intent.getLongExtra("lesson_id", 0);
+			intentLessonId = intent.getLongExtra("lesson_id", 0);
 		}
-//			max(date(start_time, 'weekday 0', '-7 day')) as WeekStart, max(date(start_time, 'weekday 0', '-1 day')) as WeekEnd
-		String[] durationProjections = new String[] { 
-				NceDatabase.UserAction._ID,
-				NceDatabase.UserAction.LESSON_ID,
-				"max(date(" + NceDatabase.UserAction.START_TIME + ", 'weekday 0', '-7 day')) as WeekStart ",
-				"max(date(" + NceDatabase.UserAction.START_TIME + ", 'weekday 0', '-1 day')) as WeekEnd ",
-				NceDatabase.UserAction.START_TIME,
-				NceDatabase.UserAction.END_TIME,
-				"SUM (" + NceDatabase.UserAction.DURATION + ") AS SUMDURATION"};
-		String[] dataColumns = new String[] { 
-				NceDatabase.UserAction._ID,
-				NceDatabase.UserAction.LESSON_ID,
-				NceDatabase.UserAction.START_TIME,
-				NceDatabase.UserAction.END_TIME,
-				NceDatabase.UserAction.DURATION };
-		int[] viewIDs = new int[] { R.id.tv_id, R.id.tv_title, R.id.tv_start, R.id.tv_duration, R.id.tv_count};
+		/**
+		 * SELECT _id, lesson_id, start_time, max(date(start_time, 'weekday 0', '-7 day')) as WeekStart, max(date(start_time, 'weekday 0', '-1 day')) as WeekEnd , 
+		end_time, sum(duration)/60.0/1000.0, (strftime('%Y%m%d',start_time))
+		FROM user_action WHERE (lesson_id =2) AND (start_time not null) GROUP BY (strftime('%Y%m%d%H',start_time))
+		 */
 		
-		String selection = NceDatabase.UserAction.LESSON_ID + " =?) AND ("
-				+ NceDatabase.UserAction.START_TIME + " NOT NULL) "
+		String[] graphOpreationStrings ={"SUM (" + DURATION + ") AS DUEDURATION","COUNT (" + DURATION + ") AS DUEDURATION"};
+		
+		String selection = LESSON_ID + " =?) AND ("
+				+ START_TIME + " NOT NULL) "
 				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
-				+ NceDatabase.UserAction.START_TIME + ")";
-		String[] selectionArgsString = {Long.toString(lesson_id)};
-		String sumDuration = "SUMDURATION";
-		@SuppressWarnings("deprecation")
-		Cursor multiCursor = this.managedQuery(actionIdUri, durationProjections, selection, selectionArgsString, null);
-		int durationIndex = multiCursor.getColumnIndex(sumDuration);
-		int starttimeIndex = multiCursor.getColumnIndex(NceDatabase.UserAction.START_TIME);
-		cursorCount = multiCursor.getCount();
-		double[] durationArray = new double[cursorCount];
-		double[] starttimeArray = new double[cursorCount];
-		/*Date[] starttimeArray = new Date[cursorCount];
-		starttimeArray[0] = new Date(System.currentTimeMillis());
-		for (int i = 0; i < cursorCount; i++) {
-			long tempTime = multiCursor.getLong(starttimeIndex);
-			starttimeArray[i] = new Date(tempTime);  
-		}
+				+ START_TIME + ")";
+		String[] selectionArgsString = {Long.toString(intentLessonId)};
 		
-		Set<Date> tempSet = new TreeSet<Date>(Arrays.asList(starttimeArray));
-		Date[] dinStartTimeArrayDates = tempSet.toArray(new Date[tempSet.size()]);
-		double[] durationArray = new double[cursorCount];*/
-		double maxDuration = 0.0;
-		double minDuration = 0.0;
-		multiCursor.moveToFirst();
-		for(int i = 0;i<cursorCount;i++){
-			durationArray[i]=multiCursor.getLong(durationIndex)/1000.0/60.0;
-			maxDuration = Math.max(durationArray[i], maxDuration);
-			minDuration = Math.min(durationArray[i], minDuration);
-			String starttimeString = multiCursor.getString(starttimeIndex);  
-			try {
-				starttimeArray[i] = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(starttimeString).getTime();
-			} catch (ParseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		renderers = new XYMultipleSeriesRenderer[graphOpreationStrings.length];
+		x = new ArrayList[graphOpreationStrings.length];
+		values = new ArrayList[graphOpreationStrings.length];
+		double[] divFactor = {1000.0*60.0, 1.0};
+		String[] DurationTitle = {"分钟","次数"};
+		String[] xTitle = {"月-日","小时"};
+		int valueColors[][] = {{Color.BLUE},{Color.RED}};
+		
+		for (int i = 0; i < graphOpreationStrings.length; i++) {
+			String[] durationProjection = new String[] { ID,LESSON_ID,WEEKSTART,WEEKEND,START_TIME,END_TIME, graphOpreationStrings[i] };
+			renderers[i] = new XYMultipleSeriesRenderer();
+			x[i] = new ArrayList<double[]>();
+			values[i] = new ArrayList<double[]>();
+			@SuppressWarnings("deprecation")
+			Cursor durationCursor = this.managedQuery(actionIdUri, durationProjection, selection, selectionArgsString, null);
+			int durationIndex = durationCursor.getColumnIndex("DUEDURATION");
+			int starttimeIndex = durationCursor.getColumnIndex(START_TIME);
+			cursorCount = durationCursor.getCount();
+			durationArrays = new double[cursorCount];
+			starttimeArrays = new double[cursorCount];
+			double maxDuration = 0.0;
+			double minDuration = 0.0;
+			durationCursor.moveToFirst();
+			for(int j = 0;j<cursorCount;j++){
+				durationArrays[j]=Math.ceil(durationCursor.getLong(durationIndex)/divFactor[i]);
+				maxDuration = Math.max(durationArrays[j], maxDuration);
+				minDuration = Math.min(durationArrays[j], minDuration);
+				String starttimeString = durationCursor.getString(starttimeIndex);  
+				try {
+					starttimeArrays[j] = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(starttimeString).getTime();
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("durationValues" + j + "---" + durationArrays[j]);
+				System.out.println("starttime" + j + "---" + starttimeArrays[j]);
+				durationCursor.moveToNext();
 			}
-			System.out.println("durationValues" + i + "---" + durationArray[i]);
-			System.out.println("starttime" + i + "---" + starttimeArray[i]);
-			multiCursor.moveToNext();
+			Arrays.sort(starttimeArrays);
+	        x[i].add(starttimeArrays);
+	        values[i].add(durationArrays);
+	        PointStyle[] styles = new PointStyle[] { PointStyle.CIRCLE };
+	        renderers[i] = buildRenderer(valueColors[i], styles);
+	        int length = renderers[i].getSeriesRendererCount();
+	        for (int k = 0; k < length; k++) {
+	            ((XYSeriesRenderer) renderers[i].getSeriesRendererAt(k)).setFillPoints(true);
+	            ((XYSeriesRenderer) renderers[i].getSeriesRendererAt(k)).setLineWidth(3.0f);
+	        }
+		    renderers[i].setXLabels(12);
+			renderers[i].setYLabels(10);
+			renderers[i].setShowGrid(false);
+			renderers[i].setShowLegend(false);
+			renderers[i].setDisplayChartValues(true);
+			renderers[i].setChartValuesTextSize(15);
+			renderers[i].setXLabelsColor(Color.BLACK);
+			renderers[i].setYLabelsColor(0, Color.BLACK);
+			renderers[i].setXLabelsAlign(Align.CENTER);
+			renderers[i].setYLabelsAlign(Align.RIGHT);
+			renderers[i].setYLabelsPadding(5.0f);
+			renderers[i].setXRoundedLabels(false);
+			renderers[i].setZoomButtonsVisible(false);
+			renderers[i].setInScroll(true);
+			renderers[i].setClickEnabled(true);
+			renderers[i].setApplyBackgroundColor(true);//是否可以自定义背景色
+			renderers[i].setBackgroundColor(Color.WHITE); //chart内部的背景色
+			renderers[i].setMarginsColor(Color.WHITE);//chart边缘部分的背景色
+			
+			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle [i], starttimeArrays[i], starttimeArrays[cursorCount-1]+1000*3600*12, 0.0, 15.0, Color.BLACK, Color.BLACK);
 		}
-		Arrays.sort(starttimeArray);
-        titles = new String[] { NceDatabase.UserAction.DURATION };
-        x = new ArrayList<double[]>();
-        x.add(starttimeArray);
-        values = new ArrayList<double[]>();
-        values.add(durationArray);
-        int orangeColor = R.color.c4;
-        int[] colors = new int[] { Color.BLUE};
-        PointStyle[] styles = new PointStyle[] { PointStyle.CIRCLE };
-        renderer = buildRenderer(colors, styles);
-        int length = renderer.getSeriesRendererCount();
-        for (int i = 0; i < length; i++) {
-            ((XYSeriesRenderer) renderer.getSeriesRendererAt(i)).setFillPoints(true);
-            ((XYSeriesRenderer) renderer.getSeriesRendererAt(i)).setLineWidth(3.0f);
-        }
-
-        setChartSettings(renderer, "学习时长", "月-日", "分钟", starttimeArray[0], starttimeArray[cursorCount-1]+1000*3600*12, 0.0, 10.0, Color.BLACK, Color.BLACK);
-        renderer.setXLabels(10);
-        renderer.setYLabels(12);
-        renderer.setShowGrid(false);
-        renderer.setShowLegend(false);
-        renderer.setXLabelsColor(Color.BLACK);
-        renderer.setYLabelsColor(0, Color.BLACK);
-        renderer.setXLabelsAlign(Align.CENTER);
-        renderer.setYLabelsAlign(Align.RIGHT);
-        renderer.setYLabelsPadding(5.0f);
-        renderer.setXRoundedLabels(false);
-        renderer.setZoomButtonsVisible(false);
-        renderer.setPanLimits(new double[] { -10, 20, -10, 20 });
-        renderer.setZoomLimits(new double[] { -10, 20, -10, 20 });
-        renderer.setClickEnabled(true);
-        renderer.setApplyBackgroundColor(true);//是否可以自定义背景色
-		renderer.setBackgroundColor(Color.WHITE); //chart内部的背景色
-		renderer.setMarginsColor(Color.WHITE);//chart边缘部分的背景色
     }
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		
-		LinearLayout viewLayout1 = (LinearLayout) findViewById(R.id.ll_textgraph1);
-		LinearLayout viewLayout2 = (LinearLayout) findViewById(R.id.ll_textgraph2);
-		LinearLayout viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
-		LinearLayout viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
-		
-		 if (view1 == null) {
-			view1 = ChartFactory.getTimeChartView(this,buildDataset(titles, x, values), renderer, "MM-dd");
-			view1.setBackgroundColor(Color.WHITE);
-			    viewLayout1.addView(view1, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-			  } else {
-			    view1.repaint();
-			  }
-		 if (view2 == null){
-					view2 = ChartFactory.getTimeChartView(this,buildDataset(titles, x, values), renderer, "dd");
-					view2.setBackgroundColor(Color.WHITE);
-					    viewLayout2.addView(view2, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-			  }else {
-			    view2.repaint();
-			  }
-		 if (view3 == null){
-				view3 = ChartFactory.getTimeChartView(this,buildDataset(titles, x, values), renderer, "HH/MM");
-				view3.setBackgroundColor(Color.WHITE);
-				    viewLayout3.addView(view3, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		  }else {
-		    view3.repaint();
-		  }
-		 if (view4 == null){
-			 view4 = ChartFactory.getTimeChartView(this,buildDataset(titles, x, values), renderer, null);
-			 view4.setBackgroundColor(Color.WHITE);
-			 viewLayout4.addView(view4, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		 }else {
-			 view4.repaint();
-		 }
+		viewLayout1 = (LinearLayout) findViewById(R.id.ll_textgraph1);
+		viewLayout2 = (LinearLayout) findViewById(R.id.ll_textgraph2);
+		viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
+		viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
+		viewLayouts = new LinearLayout[] {viewLayout1, viewLayout2, viewLayout3, viewLayout4 };
+		String dateFormateString[] = {"MM-dd", "hh"};
+		view = new GraphicalView[renderers.length];
+		for (int i = 0; i < renderers.length; i++) {
+			if (view[i] == null) {
+				view[i] = ChartFactory.getTimeChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i], dateFormateString[i]);
+				view[i].setBackgroundColor(Color.WHITE);
+				viewLayouts[i].addView(view[i], new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+			} else {
+				view[i].repaint();
+			}
+		}
 	}
 	
     private XYMultipleSeriesRenderer buildRenderer(int[] colors, PointStyle[] styles) {
@@ -253,17 +237,6 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
             dataset.addSeries(series);
         }
     }
-
-    public static boolean isTheSameDay(Date d1,Date d2) {
-		Calendar c1 = Calendar.getInstance();
-		Calendar c2 = Calendar.getInstance();
-		c1.setTime(d1);
-		c2.setTime(d2);
-		return (c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR))
-				&& (c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH))
-				&& (c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH));
-	}
-
     
 	@Override
 	public boolean onDown(MotionEvent e) {
