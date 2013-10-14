@@ -40,8 +40,11 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	private static final String WEEKEND = "max(date(" + START_TIME + ", 'weekday 0', '-1 day')) as WeekEnd ";
 	private static final String WEEKSTART = "max(date(" + START_TIME + ", 'weekday 0', '-7 day')) as WeekStart ";
 	private static final String LESSON_ID = NceDatabase.UserAction.LESSON_ID;
-	private static final String ID = NceDatabase.UserAction._ID;
 	private static final String[][] TITLES = {{"学习时长"},{"学习次数"},{"间隔时长"}};
+	private static final String ID = NceDatabase.UserAction._ID;
+	
+	private String[] yColumnName;
+	private String[] xColumnNames;
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;
 	private GestureDetector mGestureDetector;
@@ -108,12 +111,13 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		x = new ArrayList[graphProjects.length];
 		values = new ArrayList[graphProjects.length];
 		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0*60.0};
-		double[] xScaleFactor = {1000*3600*12, 1000*3600*12, 1.0};
+		double[] xScaleFactor = {1000*3600*24, 1000*3600*24, 1.0};
 		String[] DurationTitle = {"分钟","次数","分钟"};
-		String[] xTitle = {"月-日","小时","次数"};
+		String[] xTitle = {"月日","月日","次数"};
 		int valueColors[][] = {{Color.BLUE},{Color.RED},{Color.GREEN}};
-		String[] column1String = { "DUEDURATION", "DUEDURATION", INTERVAL};
-		String[] column2String = { START_TIME, START_TIME, LESSON_ID};
+		
+		yColumnName = new String[] { "DUEDURATION", "DUEDURATION", INTERVAL};
+		xColumnNames = new String[] { START_TIME, START_TIME, LESSON_ID};
 		
 		
 		for (int i = 0; i < graphProjects.length; i++) {
@@ -122,8 +126,8 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			values[i] = new ArrayList<double[]>();
 			@SuppressWarnings("deprecation")
 			Cursor durationCursor = this.managedQuery(actionIdUri, graphProjects[i], selection[i], selectionArgsString, null);
-			int durationIndex = durationCursor.getColumnIndex(column1String[i]);
-			int starttimeIndex = durationCursor.getColumnIndex(column2String[i]);
+			int durationIndex = durationCursor.getColumnIndex(yColumnName[i]);
+			int starttimeIndex = durationCursor.getColumnIndex(xColumnNames[i]);
 			cursorCount = durationCursor.getCount();
 			durationArrays = new double[cursorCount];
 			starttimeArrays = new double[cursorCount];
@@ -136,7 +140,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 				minDuration = Math.min(durationArrays[j], minDuration);
 				String starttimeString = durationCursor.getString(starttimeIndex);  
 				if(i == 2){
-					starttimeArrays[j] = cursorCount;
+					starttimeArrays[j] = j;
 				}else{
 					try {
 						starttimeArrays[j] = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(starttimeString).getTime();
@@ -159,7 +163,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	            ((XYSeriesRenderer) renderers[i].getSeriesRendererAt(k)).setFillPoints(true);
 	            ((XYSeriesRenderer) renderers[i].getSeriesRendererAt(k)).setLineWidth(3.0f);
 	        }
-		    renderers[i].setXLabels(12);
+		    renderers[i].setXLabels(cursorCount);
 			renderers[i].setYLabels(10);
 			renderers[i].setShowGrid(false);
 			renderers[i].setShowLegend(false);
@@ -178,7 +182,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			renderers[i].setBackgroundColor(Color.WHITE); //chart内部的背景色
 			renderers[i].setMarginsColor(Color.WHITE);//chart边缘部分的背景色
 			
-			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle[i], starttimeArrays[0], starttimeArrays[cursorCount-1]+xScaleFactor[i], 0.0, 15.0, Color.BLACK, Color.BLACK);
+			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle[i], starttimeArrays[0], starttimeArrays[cursorCount-1]+xScaleFactor[i], 0.0, 1.2*maxDuration, Color.BLACK, Color.BLACK);
 		}
     }
 
@@ -190,11 +194,15 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
 		viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
 		viewLayouts = new LinearLayout[] {viewLayout1, viewLayout2, viewLayout3, viewLayout4 };
-		String dateFormateString[] = {"MM-dd", "hh", "hh"};
+		String dateFormateString[] = {"MM-dd", "MM-dd"};
 		view = new GraphicalView[renderers.length];
 		for (int i = 0; i < renderers.length; i++) {
 			if (view[i] == null) {
-				view[i] = ChartFactory.getTimeChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i], dateFormateString[i]);
+				if("interval".equals(yColumnName[i])){
+					view[i] = ChartFactory.getLineChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i]);
+				}else{
+					view[i] = ChartFactory.getTimeChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i], dateFormateString[i]);
+				}
 				view[i].setBackgroundColor(Color.WHITE);
 				viewLayouts[i].addView(view[i], new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			} else {
@@ -212,7 +220,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
     private void setRenderer(XYMultipleSeriesRenderer renderer, int[] colors, PointStyle[] styles) {
         renderer.setAxisTitleTextSize(16);
         renderer.setChartTitleTextSize(20);
-        renderer.setLabelsTextSize(15);
+        renderer.setLabelsTextSize(12);
         renderer.setLegendTextSize(15);
         renderer.setPointSize(5f);
         renderer.setMargins(new int[] { 20, 30, 15, 20 });

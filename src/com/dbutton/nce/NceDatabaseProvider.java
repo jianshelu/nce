@@ -155,7 +155,7 @@ public class NceDatabaseProvider extends ContentProvider {
 		// A map to hold the new record's values.
         ContentValues values = null;
 		switch (sUriMatcher.match(uri)) {
-		case ACTION_ID:
+		case ACTION:
 			if (initialValues != null) {
 	            values = new ContentValues(initialValues);
 	        } else {

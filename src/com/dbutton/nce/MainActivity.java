@@ -90,7 +90,6 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 		
 		multiCursor.setNotificationUri(getContentResolver(), textUri);
 		multiCursor.setNotificationUri(getContentResolver(), actionUri);
-		multiCursor.setNotificationUri(getContentResolver(), multiUri);
 		adapter = new ColorAdapter(this, R.layout.list_item, multiCursor,dataColumns, viewIDs);
 
 		// 以适配器的data为数组,返回的是所有查询记录的计数,不会因浏览下一页记录产生错误.
@@ -164,7 +163,7 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 			Intent intent = new Intent();
 			intent.putExtra("lesson_id", id);
 			intent.setAction(Intent.ACTION_VIEW);
-			intent.setData(multiIdUri);
+			intent.setData(textUri);
 			startActivity(intent);
 			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);     
 		}

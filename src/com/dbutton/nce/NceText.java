@@ -28,12 +28,13 @@ import android.widget.Toast;
 public class NceText extends Activity implements OnTouchListener, GestureDetector.OnGestureListener {
 
 	private static final String START_TIME = NceDatabase.UserAction.START_TIME;
+	private static final Uri actionUri = NceDatabase.UserAction.ACTION_ID_URI_BASE;
 	private final static int STATE_VIEW = 0;
 	private static final String ORIGINAL_CONTENT = "origContent";
 	private int mState;
 	private Uri multiIdUri;
 	private Uri actionIdUri;
-	private Cursor mCursor;
+	private Uri textUri;
 	private String mOriginalContent;
 	private TextView mTitle;
 	private TextView mBody;
@@ -43,18 +44,19 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	private int time = 2 * cycle;
 	private long intentLessonId;
 	private ContentValues values;
-	private Long startFirst;
+	private Long createTime;
 	private Long start;
 	private GestureDetector mGestureDetector;
 	private Intent intent;
 	private String action;
 	private long duration;
 	private boolean inText = false;
-	private String startFirstTimeString;
+	private String createStarttimeString;
 	private long lastStarttime;
 	
 	private int verticalMinDistance = 40;  
-	private int minVelocity         = 0;  
+	private int minVelocity         = 0;
+	private Uri textIdUri;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -73,40 +75,47 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 //		action = intent.getAction();
 //		if (Intent.ACTION_VIEW.equals(action)) {
 			mState = STATE_VIEW;	
-			multiIdUri = intent.getData();
+			textUri= intent.getData();
 			intentLessonId = intent.getLongExtra("lesson_id", 0);
-			actionIdUri=ContentUris.withAppendedId(NceDatabase.UserAction.ACTION_URI,intentLessonId);
+			textIdUri=ContentUris.withAppendedId(NceDatabase.NceText.TEXT_URI,intentLessonId);
 			intent.setAction(Intent.ACTION_INSERT);
 //		}
-		String[] projection = new String[] {
+		String[] textProjection = new String[] {
 				NceDatabase.NceText.TEXT_TABLE_NAME + "." + NceDatabase.NceText._ID + " AS ID", 
-				NceDatabase.NceText.TEXT_TITLE,NceDatabase.NceText.TEXT_BODY, 
-				"MAX(" + NceDatabase.UserAction.START_TIME +") AS MAXSTARTTIME"};
-		String selection = "ID =?) AND ("
+				NceDatabase.NceText.TEXT_TITLE,NceDatabase.NceText.TEXT_BODY};
+		String[] actionProjection = new String[] {
+				NceDatabase.UserAction.ACTION_TABLE_NAME + "." + NceDatabase.UserAction.LESSON_ID + " AS ID", 
+				NceDatabase.UserAction.LESSON_ID,"MAX(" + NceDatabase.UserAction.START_TIME +") AS MAXSTARTTIME"};
+		String selection = "ID =?";
+/*		String selection = "ID =?) AND ("
 				+ START_TIME + " NOT NULL";
-				
+*/				
 		String[] selectionArgsString = {Long.toString(intentLessonId)};
-		startFirst = Long.valueOf(System.currentTimeMillis());
-		startFirstTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(startFirst));
-		start=startFirst;
+		long createStarttime = Long.valueOf(System.currentTimeMillis());
+		createStarttimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(createStarttime));
+		start = createStarttime;
 		mThread.start();
-		mCursor = managedQuery(multiIdUri, projection, selection, selectionArgsString, null);
-		if (mCursor != null) {
-			mCursor.requery();
-			mCursor.moveToFirst();
-			int titleIndex = mCursor
+		Cursor textCursor = managedQuery(textUri, textProjection, selection, selectionArgsString, null);
+		Cursor actionCursor = managedQuery(actionUri, actionProjection, selection, selectionArgsString, null);
+		if (actionCursor != null && textCursor != null) {
+			textCursor.moveToFirst();
+			actionCursor.moveToFirst();
+			int titleIndex = textCursor
 					.getColumnIndex(NceDatabase.NceText.TEXT_TITLE);
-			int bodyIndex = mCursor
+			int bodyIndex = textCursor
 					.getColumnIndex(NceDatabase.NceText.TEXT_BODY);
-			int starttimeIndex = mCursor
+			String title = textCursor.getString(titleIndex);
+			String body = textCursor.getString(bodyIndex);
+			int starttimeIndex = actionCursor
 					.getColumnIndex("MAXSTARTTIME");
-			String title = mCursor.getString(titleIndex);
-			String body = mCursor.getString(bodyIndex);
-			try {
-				lastStarttime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(mCursor.getString(starttimeIndex)).getTime();
-			} catch (ParseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			String lastStarttimeString = actionCursor.getString(starttimeIndex);
+			if(lastStarttimeString != null){
+				try {
+					lastStarttime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(lastStarttimeString).getTime();
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			mTitle.setText(title);
 			mBody.setText(body);
@@ -180,19 +189,20 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		// TODO Auto-generated method stub
 		super.onDestroy();
 		long end = Long.valueOf(System.currentTimeMillis());
+		lastStarttime = lastStarttime==0?end:lastStarttime;
 		long interval = end - lastStarttime;
 		String endTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(end));
-		long inter = end - start;
-		System.out.println("duration destory before" + duration + "---" + inter);
-		duration += inter;
-		System.out.println("duration destory after" + duration + "---" + inter);
+//		long inter = end - start;
+//		System.out.println("duration destory before" + duration + "---" + inter);
+//		duration += inter;
+//		System.out.println("duration destory after" + duration + "---" + inter);
 		values = new ContentValues();
 		values.put(NceDatabase.UserAction.LESSON_ID, intentLessonId);
-		values.put(NceDatabase.UserAction.START_TIME, startFirstTimeString);
+		values.put(NceDatabase.UserAction.START_TIME, createStarttimeString);
 		values.put(NceDatabase.UserAction.END_TIME, endTimeString);
 		values.put(NceDatabase.UserAction.DURATION, duration);
 		values.put(NceDatabase.UserAction.INTERVAL, interval);
-		getContentResolver().insert(multiIdUri, values);
+		getContentResolver().insert(actionUri, values);
 		System.out.println("activity destory");
 	}
 

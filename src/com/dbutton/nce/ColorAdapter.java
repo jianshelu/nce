@@ -75,7 +75,7 @@ public class ColorAdapter extends SimpleCursorAdapter {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			time = System.currentTimeMillis() - t;
+			time = System.currentTimeMillis() - t-2000;
 		} else {
 			time = Long.parseLong(timeStr);
 		}
