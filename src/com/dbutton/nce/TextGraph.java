@@ -31,6 +31,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.TextView;
 public class TextGraph extends Activity implements OnTouchListener, GestureDetector.OnGestureListener{
 
 	private static final String DURATION = NceDatabase.UserAction.DURATION;
@@ -72,7 +73,8 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.text_graph);
 		mGestureDetector = new GestureDetector((GestureDetector.OnGestureListener) this); 
-		scrollLayout = (ScrollView)findViewById(R.id.sc_textgraph);    
+		scrollLayout = (ScrollView)findViewById(R.id.sc_textgraph);   
+		TextView tv_title = (TextView) findViewById(R.id.tv_graphtitle);
         scrollLayout.setOnTouchListener(this);    
         scrollLayout.setLongClickable(true); 
         Intent intent = getIntent();
@@ -82,6 +84,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			actionIdUri = intent.getData();
 			intentLessonId = intent.getLongExtra("lesson_id", 0);
 		}
+		tv_title.setText("第 " + intentLessonId + " 课学习记录");
 		/**
 		 * SELECT _id, lesson_id, start_time, max(date(start_time, 'weekday 0', '-7 day')) as WeekStart, max(date(start_time, 'weekday 0', '-1 day')) as WeekEnd , 
 		end_time, sum(duration)/60.0/1000.0, (strftime('%Y%m%d',start_time))
@@ -89,8 +92,8 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		 */
 		
 		String[][] graphProjects ={
-				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + "," + END_TIME + "," + "SUM (" + DURATION + ") AS DUEDURATION"},
-				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + "," + END_TIME + "," + "COUNT (" + DURATION + ") AS DUEDURATION"}, 
+				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + "," + END_TIME + "," + "SUM (" + DURATION + ") AS SUMDUEDURATION"},
+				{ID + "," + LESSON_ID + "," + WEEKSTART + "," + WEEKEND + "," + START_TIME + ","  + END_TIME + "," + "COUNT (" + DURATION + ") AS COUNTDUEDURATION"}, 
 				{ID, LESSON_ID, INTERVAL}};
 		
 		String selection[] = {
@@ -100,7 +103,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 				+ START_TIME + ")",
 				LESSON_ID + " =?) AND ("
 				+ START_TIME + " NOT NULL) "
-				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
+				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d%H',"
 				+ START_TIME + ")",
 				LESSON_ID + " =?) AND ("
 				+ INTERVAL + " NOT NULL) "
@@ -110,13 +113,13 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		renderers = new XYMultipleSeriesRenderer[graphProjects.length];
 		x = new ArrayList[graphProjects.length];
 		values = new ArrayList[graphProjects.length];
-		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0*60.0};
-		double[] xScaleFactor = {1000*3600*24, 1000*3600*24, 1.0};
+		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0};
+		double[] xScaleFactor = {1000*3600*24, 1000*3600, 1.0};
 		String[] DurationTitle = {"分钟","次数","分钟"};
-		String[] xTitle = {"月日","月日","次数"};
+		String[] xTitle = {"月日","小时","次数"};
 		int valueColors[][] = {{Color.BLUE},{Color.RED},{Color.GREEN}};
 		
-		yColumnName = new String[] { "DUEDURATION", "DUEDURATION", INTERVAL};
+		yColumnName = new String[] { "SUMDUEDURATION", "COUNTDUEDURATION", INTERVAL};
 		xColumnNames = new String[] { START_TIME, START_TIME, LESSON_ID};
 		
 		
@@ -126,9 +129,14 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			values[i] = new ArrayList<double[]>();
 			@SuppressWarnings("deprecation")
 			Cursor durationCursor = this.managedQuery(actionIdUri, graphProjects[i], selection[i], selectionArgsString, null);
+			cursorCount = durationCursor.getCount();
+			if(cursorCount == 0){
+				tv_title.setText("开始学习还没有相关信息。");
+				tv_title.setTextSize(15);
+				TextGraph.this.finish();
+			}else{
 			int durationIndex = durationCursor.getColumnIndex(yColumnName[i]);
 			int starttimeIndex = durationCursor.getColumnIndex(xColumnNames[i]);
-			cursorCount = durationCursor.getCount();
 			durationArrays = new double[cursorCount];
 			starttimeArrays = new double[cursorCount];
 			double maxDuration = 0.0;
@@ -139,7 +147,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 				maxDuration = Math.max(durationArrays[j], maxDuration);
 				minDuration = Math.min(durationArrays[j], minDuration);
 				String starttimeString = durationCursor.getString(starttimeIndex);  
-				if(i == 2){
+				if("interval".equals(yColumnName[i])){
 					starttimeArrays[j] = j;
 				}else{
 					try {
@@ -182,7 +190,8 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			renderers[i].setBackgroundColor(Color.WHITE); //chart内部的背景色
 			renderers[i].setMarginsColor(Color.WHITE);//chart边缘部分的背景色
 			
-			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle[i], starttimeArrays[0], starttimeArrays[cursorCount-1]+xScaleFactor[i], 0.0, 1.2*maxDuration, Color.BLACK, Color.BLACK);
+			setChartSettings(renderers[i], TITLES[i][0], xTitle[i], DurationTitle[i], starttimeArrays[0], starttimeArrays[cursorCount-1]+xScaleFactor[i], 0.0, Math.ceil(1.2*maxDuration), Color.BLACK, Color.BLACK);
+		}
 		}
     }
 
@@ -194,7 +203,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
 		viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
 		viewLayouts = new LinearLayout[] {viewLayout1, viewLayout2, viewLayout3, viewLayout4 };
-		String dateFormateString[] = {"MM-dd", "MM-dd"};
+		String dateFormateString[] = {"MM-dd", "HH"};
 		view = new GraphicalView[renderers.length];
 		for (int i = 0; i < renderers.length; i++) {
 			if (view[i] == null) {

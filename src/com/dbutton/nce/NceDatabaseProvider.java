@@ -301,36 +301,13 @@ public class NceDatabaseProvider extends ContentProvider {
 		String finalWhere;
 
 		switch (sUriMatcher.match(uri)) {
-		case TEXT_ID:
-			String textId = uri.getPathSegments(). // the incoming note ID
-					get(NceDatabase.NceText.TEXT_ID_PATH_POSITION);
-
-			finalWhere = NceDatabase.NceText._ID + // The ID column name
-					" = " + // test for equality
-					textId; // the incoming note ID
-			;
-			count = db.update(TABLE_NCE_TEXT, values, finalWhere, whereArgs);
+		case TEXT:
+			
+			count = db.update(TABLE_NCE_TEXT, values, whereClause, whereArgs);
 			break;
-		case ACTION_ID:
-			String actionId = uri.getPathSegments(). // the incoming note ID
-			get(NceDatabase.NceText.TEXT_ID_PATH_POSITION);
+		case ACTION:
 			
-			finalWhere = NceDatabase.UserAction._ID + // The ID column name
-					" = " + // test for equality
-					actionId; // the incoming note ID
-			;
-			count = db.update(TABLE_NCE_TEXT, values, finalWhere, whereArgs);
-			break;
-			
-		case MULTI_TEXT_ID:
-			String multiTextId = uri.getPathSegments(). // the incoming note ID
-			get(NceDatabase.NceText.MULTI_TEXT_ID_PATH_POSITION);
-			
-			finalWhere = NceDatabase.UserAction._ID + // The ID column name
-					" = " + // test for equality
-					multiTextId; // the incoming note ID
-			;
-			count = db.update(TABLE_NCE_TEXT, values, finalWhere, whereArgs);
+			count = db.update(TABLE_NCE_TEXT, values, whereClause, whereArgs);
 			break;
 
 		default:

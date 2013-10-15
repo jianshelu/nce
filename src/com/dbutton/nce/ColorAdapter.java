@@ -40,15 +40,16 @@ public class ColorAdapter extends SimpleCursorAdapter {
 		TypedArray backColor = resource
 				.obtainTypedArray(R.array.count_color);
 		int colorNum = backColor.length();
-		int clickIndex = c.getColumnIndex(NceDatabase.NceText.CLICK_COUNT);
-		int click_count = c.getInt(clickIndex);
-		convertView.setBackgroundDrawable(backColor
-				.getDrawable((click_count % colorNum)));
 		TextView startText = (TextView) convertView.findViewById(R.id.tv_start);
 		TextView durationText = (TextView) convertView.findViewById(R.id.tv_duration);
+		TextView countText = (TextView) convertView.findViewById(R.id.tv_count);
 		
 		String startTime = startText.getText().toString();
 		String durationTime = durationText.getText().toString();
+		int click_count = Integer.valueOf(countText.getText().toString());
+		
+		convertView.setBackgroundDrawable(backColor
+				.getDrawable((click_count % colorNum)));
 		
 		if(("".equals(durationTime))==false){
 			String durFormat = getStandardTime(durationTime,durationFormat);

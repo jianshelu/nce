@@ -32,6 +32,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
@@ -89,7 +90,7 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 		multiCursor = this.managedQuery(multiUri, multiProjections, selection, null, null);
 		
 		multiCursor.setNotificationUri(getContentResolver(), textUri);
-		multiCursor.setNotificationUri(getContentResolver(), actionUri);
+//		multiCursor.setNotificationUri(getContentResolver(), actionUri);
 		adapter = new ColorAdapter(this, R.layout.list_item, multiCursor,dataColumns, viewIDs);
 
 		// 以适配器的data为数组,返回的是所有查询记录的计数,不会因浏览下一页记录产生错误.
@@ -102,14 +103,16 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 		        	checkbox.setChecked(bChecked);
 
 					checkbox.setOnClickListener(new View.OnClickListener() {
-
+						
 							@Override
 							public void onClick(View view) {
 								int position = listView.getPositionForView(view);
+								multiCursor.setNotificationUri(getContentResolver(), textUri);
 								if (multiCursor.moveToPosition(position)) {
 									int nCheckedIndex = multiCursor.getColumnIndexOrThrow(NceDatabase.NceText.USER_FAVORITE);
-									boolean bChecked = (multiCursor.getInt(nCheckedIndex) != 0);
-									Uri textIdUri = ContentUris.withAppendedId(multiUri, position+1);
+									int favValue = multiCursor.getInt(nCheckedIndex);
+									boolean bChecked = (favValue != 0);
+									Uri textIdUri = ContentUris.withAppendedId(multiUri, position);
 									ContentValues values = new ContentValues();
 									if (bChecked) {
 										values.put(NceDatabase.NceText.USER_FAVORITE,0);
@@ -120,7 +123,8 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 										((CheckBox)view).setChecked(true);
 										System.out.println("position0: " + position);
 									}
-									getContentResolver().update(textIdUri,values, null, null);
+									String selection = NceDatabase.NceText._ID + " =?";
+									getContentResolver().update(textUri,values, selection, new String[]{(position+1) + ""});
 								}
 							}
 					});
@@ -139,24 +143,24 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,long id) {
-			System.out.println("parent:" + parent +"; view " + view + "; position" + position + "; id" + id);
-			int count = 0;
-			Uri multiIdUri = ContentUris.withAppendedId(multiUri, id);
-			String[] clickCount = { NceDatabase.NceText.CLICK_COUNT,
-					NceDatabase.NceText.USER_FAVORITE };
-			String selection = NceDatabase.NceText._ID + "=?";
-			String[] cid = { Long.toString(id)};
-//			Cursor countCursor = getContentResolver().query(textIdUri, clickCount, selection, cid, null);
-			if(multiCursor.moveToPosition(position)){
-				count = multiCursor.getInt(multiCursor.getColumnIndex(NceDatabase.NceText.CLICK_COUNT));
-			}else{
-				return;
-			}
-
-			count++;
-			ContentValues values = new ContentValues();
-			values.put(NceDatabase.NceText.CLICK_COUNT, count);
-			getContentResolver().update(multiIdUri, values, null, null);
+//			System.out.println("parent:" + parent +"; view " + view + "; position" + position + "; id" + id);
+//			int count = 0;
+//			Uri multiIdUri = ContentUris.withAppendedId(multiUri, id);
+//			String[] clickCount = { NceDatabase.NceText.CLICK_COUNT,
+//					NceDatabase.NceText.USER_FAVORITE };
+//			String selection = NceDatabase.NceText._ID + "=?";
+//			String[] cid = { Long.toString(id)};
+////			Cursor countCursor = getContentResolver().query(textIdUri, clickCount, selection, cid, null);
+//			if(multiCursor.moveToPosition(position)){
+//				count = multiCursor.getInt(multiCursor.getColumnIndex(NceDatabase.NceText.CLICK_COUNT));
+//			}else{
+//				return;
+//			}
+//
+//			count++;
+//			ContentValues values = new ContentValues();
+//			values.put(NceDatabase.NceText.CLICK_COUNT, count);
+//			getContentResolver().update(multiIdUri, values, null, null);
 			//viewCursor.requery();
 			//adapter.setClickCount(count, position);
 			Log.i(TAG,"Postion"+ position+ "--"+ count);
