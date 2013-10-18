@@ -17,6 +17,10 @@ import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -53,7 +57,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	private GraphicalView[] view;
 	
 	private int mState;
-	private Uri actionIdUri;
+	private Uri actionUri;
 	private final static int STATE_VIEW = 0;
 	private long intentLessonId;
 	private int cursorCount;
@@ -81,7 +85,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		String action = intent.getAction();
 		if (Intent.ACTION_VIEW.equals(action)) {
 			mState = STATE_VIEW;	
-			actionIdUri = intent.getData();
+			actionUri = intent.getData();
 			intentLessonId = intent.getLongExtra("lesson_id", 0);
 		}
 		tv_title.setText("第 " + intentLessonId + " 课学习记录");
@@ -99,11 +103,11 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		String selection[] = {
 				LESSON_ID + " =?) AND ("
 				+ START_TIME + " NOT NULL) "
-				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
+				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d%H%M%S',"
 				+ START_TIME + ")",
 				LESSON_ID + " =?) AND ("
 				+ START_TIME + " NOT NULL) "
-				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d%H',"
+				+ " GROUP BY " + "(" + "strftime" + "(" + "'%Y%m%d',"
 				+ START_TIME + ")",
 				LESSON_ID + " =?) AND ("
 				+ INTERVAL + " NOT NULL) "
@@ -113,10 +117,10 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		renderers = new XYMultipleSeriesRenderer[graphProjects.length];
 		x = new ArrayList[graphProjects.length];
 		values = new ArrayList[graphProjects.length];
-		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0};
-		double[] xScaleFactor = {1000*3600*24, 1000*3600, 1.0};
-		String[] DurationTitle = {"分钟","次数","分钟"};
-		String[] xTitle = {"月日","小时","次数"};
+		double[] divFactor = {1000.0*60.0, 1.0, 1000.0*60.0*60.0};
+		double[] xScaleFactor = {1.0, 1000.0*3600.0, 1.0};
+		String[] DurationTitle = {"分钟","次数","小时"};
+		String[] xTitle = {"次数","月日","次数"};
 		int valueColors[][] = {{Color.BLUE},{Color.RED},{Color.GREEN}};
 		
 		yColumnName = new String[] { "SUMDUEDURATION", "COUNTDUEDURATION", INTERVAL};
@@ -128,12 +132,11 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 			x[i] = new ArrayList<double[]>();
 			values[i] = new ArrayList<double[]>();
 			@SuppressWarnings("deprecation")
-			Cursor durationCursor = this.managedQuery(actionIdUri, graphProjects[i], selection[i], selectionArgsString, null);
+			Cursor durationCursor = this.managedQuery(actionUri, graphProjects[i], selection[i], selectionArgsString, null);
 			cursorCount = durationCursor.getCount();
+			System.out.println("data count: " + cursorCount);
 			if(cursorCount == 0){
-				tv_title.setText("开始学习还没有相关信息。");
-				tv_title.setTextSize(15);
-				TextGraph.this.finish();
+//				dialog();
 			}else{
 			int durationIndex = durationCursor.getColumnIndex(yColumnName[i]);
 			int starttimeIndex = durationCursor.getColumnIndex(xColumnNames[i]);
@@ -147,7 +150,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 				maxDuration = Math.max(durationArrays[j], maxDuration);
 				minDuration = Math.min(durationArrays[j], minDuration);
 				String starttimeString = durationCursor.getString(starttimeIndex);  
-				if("interval".equals(yColumnName[i])){
+				if("SUMDUEDURATION".equals(yColumnName[i])||"interval".equals(yColumnName[i])){
 					starttimeArrays[j] = j;
 				}else{
 					try {
@@ -156,9 +159,9 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					System.out.println("durationValues" + j + "---" + durationArrays[j]);
-					System.out.println("starttime" + j + "---" + starttimeArrays[j]);
 				}
+				System.out.println("durationValues" + i +" , "+ j + "---" + durationArrays[j]);
+				System.out.println("starttime" +  i +" , " +j + "---" + starttimeArrays[j]);
 				durationCursor.moveToNext();
 			}
 			Arrays.sort(starttimeArrays);
@@ -203,11 +206,11 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 		viewLayout3 = (LinearLayout) findViewById(R.id.ll_textgraph3);
 		viewLayout4 = (LinearLayout) findViewById(R.id.ll_textgraph4);
 		viewLayouts = new LinearLayout[] {viewLayout1, viewLayout2, viewLayout3, viewLayout4 };
-		String dateFormateString[] = {"MM-dd", "HH"};
+		String dateFormateString[] = {"", "MM-dd"};
 		view = new GraphicalView[renderers.length];
 		for (int i = 0; i < renderers.length; i++) {
 			if (view[i] == null) {
-				if("interval".equals(yColumnName[i])){
+				if("SUMDUEDURATION".equals(yColumnName[i])||"interval".equals(yColumnName[i])){
 					view[i] = ChartFactory.getLineChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i]);
 				}else{
 					view[i] = ChartFactory.getTimeChartView(this,buildDataset(TITLES[i], x[i], values[i]), renderers[i], dateFormateString[i]);

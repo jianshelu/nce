@@ -1,15 +1,22 @@
 package com.dbutton.nce;
 
 import java.sql.Date;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.LinearGradient;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,7 +28,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +67,9 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	private int verticalMinDistance = 40;  
 	private int minVelocity         = 0;
 	private Uri textIdUri;
+	
+	private TextView textView;
+	private Handler handler;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -108,8 +117,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			System.out.println("laststarttimestring: " + lastStarttimeString);
 			if (lastStarttimeString != null) {
 				try {
-					lastStarttime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
-							.parse(lastStarttimeString).getTime();
+					lastStarttime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(lastStarttimeString).getTime();
 				} catch (ParseException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -164,7 +172,6 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		public void run() {
 			
 			for (int i = time + 1 ; i > 0; i--) {
-				
 				try {
 					Message msg = new Message();
 					msg.arg1 = i-1;
@@ -189,7 +196,6 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 			}
 		}
 	});
-	
 
 	 @Override
 	    protected void onSaveInstanceState(Bundle outState) {
@@ -210,7 +216,7 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		long end = Long.valueOf(System.currentTimeMillis());
 //		lastStarttime = lastStarttimeString == null?end:lastStarttime;
 		long interval = end - (lastStarttimeString == null?end:lastStarttime);
-		System.out.println("end: " + end + "; intervale:" + interval);
+		System.out.println("end: " + end + " ;lastStarttime: " + lastStarttime +"; intervale:" + interval);
 		String endTimeString = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date(end));
 //		long inter = end - start;
 //		System.out.println("duration destory before" + duration + "---" + inter);
@@ -248,6 +254,19 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 		duration += inter;
 		System.out.println("duration pasue" + duration + "---" + inter);
 	}
+	
+	protected void dialog() {
+		AlertDialog alertDialog = new AlertDialog.Builder(this)
+		.setView(textView).setTitle("提示:")
+		.setMessage("还没有学习记录")
+		.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface arg0, int arg1) {
+			}
+		}).create();
+		alertDialog.show();
+	}
+
 	@Override
 	public boolean onDown(MotionEvent e) {
 		// TODO Auto-generated method stub
@@ -257,19 +276,25 @@ public class NceText extends Activity implements OnTouchListener, GestureDetecto
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
 			float velocityY) {
-		Log.i("Fling", "Fling Happened!");  
-		 if (e1.getX() - e2.getX() > verticalMinDistance && Math.abs(velocityX) > minVelocity) {  
-//			startActivity(intent);
-			Intent intent = new Intent();
-			intent.putExtra("lesson_id", intentLessonId);
-			intent.setAction(Intent.ACTION_VIEW);
-			intent.setData(NceDatabase.UserAction.ACTION_ID_URI_BASE);
-			startActivity(intent);
-			//设置切换动画，从右边进入，左边退出
-			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
-            return true;  
-        } 
-        return true; 
+		Log.i("Fling", "Fling Happened!");
+		if (e1.getX() - e2.getX() > verticalMinDistance
+				&& Math.abs(velocityX) > minVelocity) {
+			// startActivity(intent);
+			if (clickCount == 0) {
+				dialog();
+			} else {
+				Intent intent = new Intent();
+				intent.putExtra("lesson_id", intentLessonId);
+				intent.setAction(Intent.ACTION_VIEW);
+				intent.setData(actionUri);
+				startActivity(intent);
+				// 设置切换动画，从右边进入，左边退出
+				overridePendingTransition(R.anim.in_from_right,
+						R.anim.out_to_left);
+			}
+			return true;
+		}
+		return true;
 	}
 
 	@Override
