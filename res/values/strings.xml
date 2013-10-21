@@ -9,5 +9,6 @@
     <string name="tv_count">学习次数</string>
     <string name="text_graph">学习记录</string>
     <string name="user_action">学习日历</string>
+    <string name="desc"></string>
 
 </resources>

@@ -28,11 +28,14 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.Window;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
@@ -51,17 +54,30 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 	private Uri multiUri;
 	private Uri actionUri;
 	private Cursor multiCursor;
+	private Cursor favoriteCursor;
 	private GestureDetector mGestureDetector;
 	
 	private int verticalMinDistance = 40;  
-	private int minVelocity         = 0;  
+	private int minVelocity         = 0;
+	private boolean myFavoriteStatus;
+	private String myFavoriteString;
+	private String selection;
+	private String[] multiProjections;  
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		mGestureDetector = new GestureDetector((GestureDetector.OnGestureListener) this);    
-        RelativeLayout viewSnsLayout = (RelativeLayout)findViewById(R.id.relativeLayout);    
+		LinearLayout viewSnsLayout = (LinearLayout)findViewById(R.id.linearLayout);    
+
+		myFavoriteStatus = false;
+		myFavoriteString = "";
+		
+		
+		if(myFavoriteStatus){
+		}else{
+		}
         viewSnsLayout.setOnTouchListener(this);    
         viewSnsLayout.setLongClickable(true);    
 		listView = (ListView) findViewById(R.id.lv);
@@ -70,7 +86,7 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 		textUri = NceDatabase.NceText.TEXT_URI;
 		actionUri = NceDatabase.UserAction.ACTION_URI;
 		multiUri = Uri.withAppendedPath(NceDatabase.NceText.TEXT_URI, NceDatabase.UserAction.ACTION_TABLE_NAME);
-		String[] multiProjections = new String[] { 
+		multiProjections = new String[] { 
 				NceDatabase.NceText.TEXT_TABLE_NAME + "." + NceDatabase.NceText._ID + " AS _id",
 				NceDatabase.NceText.TEXT_TITLE,
 				NceDatabase.NceText.CLICK_COUNT,
@@ -84,10 +100,26 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 				NceDatabase.UserAction.START_TIME,
 				NceDatabase.UserAction.DURATION };
 		viewIDs = new int[] { R.id.tv_id, R.id.tv_title, R.id.tv_count,R.id.cb_favorite,R.id.tv_start, R.id.tv_duration};
-		String selection = NceDatabase.NceText.TEXT_TABLE_NAME + "."+ NceDatabase.NceText._ID + " == "
+		selection = NceDatabase.NceText.TEXT_TABLE_NAME + "."+ NceDatabase.NceText._ID + " == "
 						+ NceDatabase.UserAction.ACTION_TABLE_NAME + "." + NceDatabase.UserAction.LESSON_ID;
-		
 		multiCursor = this.managedQuery(multiUri, multiProjections, selection, null, null);
+		CheckBox myFavorite = (CheckBox)findViewById(R.id.my_favorite); 
+		myFavorite.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+			
+
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				if(isChecked){
+					String favoriteSelection = selection + " AND nce_2_text.user_favorite == 1";
+					favoriteCursor = MainActivity.this.managedQuery(multiUri, multiProjections, favoriteSelection, null, null);
+					adapter.swapCursor(favoriteCursor);
+				}else{
+					multiCursor = MainActivity.this.managedQuery(multiUri, multiProjections, selection, null, null);
+					adapter.swapCursor(multiCursor);
+				}
+			}});
 		
 		multiCursor.setNotificationUri(getContentResolver(), textUri);
 //		multiCursor.setNotificationUri(getContentResolver(), actionUri);

@@ -8,6 +8,7 @@
         android:id="@+id/ll_textgraph"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:focusableInTouchMode="false"
         android:layout_marginTop="5dp"
         android:orientation="vertical" >
         
@@ -22,7 +23,7 @@
         
         <LinearLayout
             android:id="@+id/ll_textgraph1"
-            android:layout_width="200dp"
+            android:layout_width="300dp"
             android:layout_height="200dp"
             android:layout_gravity="center"
             android:layout_marginTop="5dp"
@@ -31,7 +32,7 @@
 
         <LinearLayout
             android:id="@+id/ll_textgraph2"
-            android:layout_width="200dp"
+            android:layout_width="300dp"
             android:layout_height="200dp"
             android:layout_gravity="center"
             android:layout_marginTop="5dp"
@@ -40,7 +41,7 @@
 
         <LinearLayout
             android:id="@+id/ll_textgraph3"
-            android:layout_width="200dp"
+            android:layout_width="300dp"
             android:layout_height="200dp"
             android:layout_gravity="center"
             android:layout_marginTop="5dp"
@@ -49,7 +50,7 @@
 
         <LinearLayout
             android:id="@+id/ll_textgraph4"
-            android:layout_width="200dp"
+            android:layout_width="300dp"
             android:layout_height="200dp"
             android:layout_gravity="center"
             android:layout_marginTop="5dp"

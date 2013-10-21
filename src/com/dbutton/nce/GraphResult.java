@@ -21,7 +21,7 @@ public class GraphResult extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		RelativeLayout viewSnsLayout = (RelativeLayout)findViewById(R.id.relativeLayout);
+		RelativeLayout viewSnsLayout = (RelativeLayout)findViewById(R.id.linearLayout);
 		ListView listView = (ListView) findViewById(R.id.lv);
 		
 		Intent intent = getIntent();

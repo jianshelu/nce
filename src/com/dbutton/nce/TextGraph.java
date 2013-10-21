@@ -50,7 +50,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	
 	private String[] yColumnName;
 	private String[] xColumnNames;
-	private int verticalMinDistance = 40;  
+	private int verticalMinDistance = 100;  
 	private int minVelocity         = 0;
 	private GestureDetector mGestureDetector;
 	private ScrollView scrollLayout;
@@ -306,6 +306,7 @@ public class TextGraph extends Activity implements OnTouchListener, GestureDetec
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
 			float distanceY) {
 		// TODO Auto-generated method stub
+		System.out.println("onScroll");
 		return false;
 	}
 
