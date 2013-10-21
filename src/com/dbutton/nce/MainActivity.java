@@ -24,7 +24,11 @@ import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -168,6 +172,7 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 			  
 		listView.setAdapter(adapter);
 		listView.setOnItemClickListener(new myItemClickListener());
+		super.registerForContextMenu(this.listView);  
 	}
 		
 	
@@ -206,6 +211,48 @@ public class MainActivity extends Activity implements OnTouchListener, GestureDe
 		
 
 	}
+	
+	 @Override 
+	    public boolean onContextItemSelected(MenuItem item) {  
+	        // 实例化info进而通过info.position得到ListView中的那一项(id)被选中，从而生产上下文菜单并显示  
+	        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item  
+	                .getMenuInfo();  
+	        long intentLessonId = info.id;  
+	        // 获取联系人的id  
+	        
+	        // 进行上下文菜单的操作  
+	        switch (item.getItemId()) {  
+	        // 查看  
+	        case Menu.FIRST + 1:  
+	            // 查询的条件  
+	        	if (1 == 0) {
+//					dialog();
+				} else {
+					Intent intent = new Intent();
+					intent.putExtra("lesson_id", intentLessonId);
+					intent.setAction(Intent.ACTION_VIEW);
+					intent.setData(actionUri);
+					startActivity(intent);
+					// 设置切换动画，从右边进入，左边退出
+					overridePendingTransition(R.anim.in_from_right,
+							R.anim.out_to_left);
+				}
+	            break;  
+	        }  
+	        return super.onContextItemSelected(item);  
+	    }  
+	
+	@Override 
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) { // 创建菜单 
+       //此处的View 为 ListView  此外我们可以通过  AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+        //   然后info.position来获取产生上下菜单的ListView中某个条目的id
+        super.onCreateContextMenu(menu, v, menuInfo);  
+        menu.setHeaderIcon(R.drawable.ic_dialog_menu);
+        // 设置上下文菜单的标题  
+        menu.setHeaderTitle("课文操作");  
+        // 设置上下文菜单的选项"查看详情"  
+        menu.add(Menu.NONE, Menu.FIRST + 1, 1, "学习记录");  
+    }  
 
 	@Override
 	public boolean onDown(MotionEvent e) {

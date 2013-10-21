@@ -46,6 +46,6 @@
     <color name="c4">#FFA00E</color>
     <color name="c5">#FF9105</color>
     <color name="c6">#CC0000</color>
-    <color name="title_background">#ff1f1f1f</color>
+    <color name="title_background">#1f1f1f</color>
 
 </resources>
